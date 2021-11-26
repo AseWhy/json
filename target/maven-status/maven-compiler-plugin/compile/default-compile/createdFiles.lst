@@ -1,1 +1,4 @@
+io/github/asewhy/json/support/interfaces/iWriter.class
 io/github/asewhy/json/JsonGenerator.class
+io/github/asewhy/json/support/CommonBuilderWriter.class
+io/github/asewhy/json/support/StreamWrapperWriter.class

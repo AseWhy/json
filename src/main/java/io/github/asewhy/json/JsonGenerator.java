@@ -1,7 +1,11 @@
 package io.github.asewhy.json;
 
+import io.github.asewhy.json.support.CommonBuilderWriter;
+import io.github.asewhy.json.support.StreamWrapperWriter;
+import io.github.asewhy.json.support.interfaces.iWriter;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -22,21 +26,13 @@ public final class JsonGenerator {
     private boolean inArray;
     private boolean havePrev;
     private DateFormat currentFormat;
-    private final StringBuilder builder;
+    private final iWriter writer;
 
-    public JsonGenerator(@NotNull StringBuilder builder, @NotNull DateFormat format) {
-        this.builder = builder;
+    private JsonGenerator(@NotNull iWriter writer, @NotNull DateFormat format) {
+        this.writer = writer;
         this.inArray = false;
         this.havePrev = false;
         this.currentFormat = format;
-    }
-
-    public JsonGenerator(@NotNull DateFormat format) {
-        this(new StringBuilder(), format);
-    }
-
-    public JsonGenerator() {
-        this(new StringBuilder(), PARSABLE_DATE_FORMAT);
     }
 
     /**
@@ -86,14 +82,20 @@ public final class JsonGenerator {
         }
 
         if(write == null) {
-            this.builder.append("null");
+            this.writer.write("null");
         } else {
             if (write instanceof Double) {
-                this.builder.append(String.format("%.2f", write));
+                this.writer.write(String.format("%.2f", write));
+            } else if (write instanceof Float) {
+                this.writer.write(String.format("%.2f", write));
             } else if (write instanceof BigDecimal) {
-                this.builder.append(String.format("%.2f", write));
-            } else {
-                this.builder.append(write);
+                this.writer.write(String.format("%.2f", write));
+            } else if (write instanceof Long) {
+                this.writer.write(String.format("%d", write));
+            } else if (write instanceof Integer) {
+                this.writer.write(String.format("%d", write));
+            } else if (write instanceof Byte) {
+                this.writer.write(String.format("%d", write));
             }
         }
 
@@ -111,9 +113,9 @@ public final class JsonGenerator {
         }
 
         if(write == null) {
-            this.builder.append("null");
+            this.writer.write("null");
         } else {
-            this.builder.append(HOOK).append(safeJson(write)).append(HOOK);
+            this.writer.write(HOOK).write(safeJson(write)).write(HOOK);
         }
 
         return this;
@@ -127,16 +129,20 @@ public final class JsonGenerator {
     public JsonGenerator writeField(String name, Object value) {
         writeField(name);
 
-        if(value instanceof String) {
-            write((String) value);
-        } else if(value instanceof Number) {
-            write((Number) value);
-        } else if(value instanceof Enum<?>) {
-            write((Enum<?>) value);
-        } else if(value instanceof Date) {
-            write((Date) value);
+        if(value == null) {
+            write((String) null);
         } else {
-            write("");
+            if(value instanceof String) {
+                write((String) value);
+            } else if(value instanceof Number) {
+                write((Number) value);
+            } else if(value instanceof Enum<?>) {
+                write((Enum<?>) value);
+            } else if(value instanceof Date) {
+                write((Date) value);
+            } else {
+                write(value.toString());
+            }
         }
 
         return this;
@@ -150,7 +156,7 @@ public final class JsonGenerator {
     public JsonGenerator writeField(String write) {
         if(!this.inArray) {
             checkPrev();
-            this.builder.append(HOOK).append(safeJson(write)).append(HOOK).append(FIELD_START);
+            this.writer.write(HOOK).write(safeJson(write)).write(HOOK).write(FIELD_START);
         }
 
         return this;
@@ -168,7 +174,21 @@ public final class JsonGenerator {
 
         this.havePrev = false;
         this.inArray = false;
-        this.builder.append(OBJ_START);
+        this.writer.write(OBJ_START);
+
+        return this;
+    }
+
+    /**
+     * Выводит начало объекта [
+     *
+     * @param name имя поля с объектом
+     * @return генератор {@link JsonGenerator}
+     */
+    public JsonGenerator writeStartObject(String name) {
+        writeField(name);
+        writeStartObject();
+
         return this;
     }
 
@@ -180,7 +200,8 @@ public final class JsonGenerator {
     public JsonGenerator writeEndObject() {
         this.havePrev = true;
         this.inArray = false;
-        this.builder.append(OBJ_END);
+        this.writer.write(OBJ_END);
+
         return this;
     }
 
@@ -196,7 +217,20 @@ public final class JsonGenerator {
 
         this.havePrev = false;
         this.inArray = true;
-        this.builder.append(ARR_START);
+        this.writer.write(ARR_START);
+        return this;
+    }
+
+    /**
+     * Выводит начало массива [
+     *
+     * @param name имя поля с массивом
+     * @return генератор {@link JsonGenerator}
+     */
+    public JsonGenerator writeStartArray(String name) {
+        writeField(name);
+        writeStartArray();
+
         return this;
     }
 
@@ -208,7 +242,7 @@ public final class JsonGenerator {
     public JsonGenerator writeEndArray() {
         this.havePrev = true;
         this.inArray = false;
-        this.builder.append(ARR_END);
+        this.writer.write(ARR_END);
         return this;
     }
 
@@ -217,7 +251,7 @@ public final class JsonGenerator {
      */
     private void checkPrev() {
         if(this.havePrev) {
-            this.builder.append(COMMA);
+            this.writer.write(COMMA);
         } else {
             this.havePrev = true;
         }
@@ -233,8 +267,42 @@ public final class JsonGenerator {
         return some.replaceAll("\"", "\\\\\"");
     }
 
+    /**
+     * Преобразовывает генератор к строковому значению
+     *
+     * @return строковое значение, зависит от реализации {@link iWriter}
+     */
     @Override
     public String toString() {
-        return this.builder.toString();
+        return this.writer.toString();
+    }
+
+
+    //
+    // Методы-фабрики
+    //
+
+    public static JsonGenerator from(@NotNull StringBuilder builder) {
+        return new JsonGenerator(new CommonBuilderWriter(builder), PARSABLE_DATE_FORMAT);
+    }
+
+    public static JsonGenerator from(@NotNull OutputStream stream) {
+        return new JsonGenerator(new StreamWrapperWriter(stream), PARSABLE_DATE_FORMAT);
+    }
+
+    public static JsonGenerator from(@NotNull StringBuilder builder, @NotNull DateFormat format) {
+        return new JsonGenerator(new CommonBuilderWriter(builder), format);
+    }
+
+    public static JsonGenerator from(@NotNull OutputStream stream, @NotNull DateFormat format) {
+        return new JsonGenerator(new StreamWrapperWriter(stream), format);
+    }
+
+    public static JsonGenerator from(@NotNull DateFormat format) {
+        return new JsonGenerator(new CommonBuilderWriter(new StringBuilder()), format);
+    }
+
+    public static JsonGenerator common() {
+        return new JsonGenerator(new CommonBuilderWriter(new StringBuilder()), PARSABLE_DATE_FORMAT);
     }
 }
