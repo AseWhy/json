@@ -6,7 +6,6 @@ import io.github.asewhy.json.support.interfaces.iWriter;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.OutputStream;
-import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -84,19 +83,7 @@ public final class JsonGenerator {
         if(write == null) {
             this.writer.write("null");
         } else {
-            if (write instanceof Double) {
-                this.writer.write(String.format("%.2f", write));
-            } else if (write instanceof Float) {
-                this.writer.write(String.format("%.2f", write));
-            } else if (write instanceof BigDecimal) {
-                this.writer.write(String.format("%.2f", write));
-            } else if (write instanceof Long) {
-                this.writer.write(String.format("%d", write));
-            } else if (write instanceof Integer) {
-                this.writer.write(String.format("%d", write));
-            } else if (write instanceof Byte) {
-                this.writer.write(String.format("%d", write));
-            }
+            this.writer.write(String.valueOf(write));
         }
 
         return this;
