@@ -1,8 +1,8 @@
 package io.github.asewhy.json;
 
-import io.github.asewhy.json.support.CommonBuilderWriter;
-import io.github.asewhy.json.support.StreamWrapperWriter;
-import io.github.asewhy.json.support.interfaces.iWriter;
+import io.github.asewhy.processors.support.CommonBuilderWriter;
+import io.github.asewhy.processors.support.StreamWrapperWriter;
+import io.github.asewhy.processors.support.interfaces.iWriter;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.OutputStream;
