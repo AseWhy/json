@@ -9,6 +9,8 @@ import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.LinkedList;
+import java.util.Objects;
 
 @SuppressWarnings({"UnusedReturnValue", "unused"})
 public final class JsonGenerator {
@@ -22,14 +24,14 @@ public final class JsonGenerator {
     private static final String ARR_END = "]";
     private static final String FIELD_START = ":";
 
-    private boolean inArray;
+    private LinkedList<Boolean> inArray;
     private boolean havePrev;
     private DateFormat currentFormat;
     private final iWriter writer;
 
     private JsonGenerator(@NotNull iWriter writer, @NotNull DateFormat format) {
         this.writer = writer;
-        this.inArray = false;
+        this.inArray = new LinkedList<>();
         this.havePrev = false;
         this.currentFormat = format;
     }
@@ -76,7 +78,7 @@ public final class JsonGenerator {
      * @return генератор {@link JsonGenerator}
      */
     public JsonGenerator write(Number write) {
-        if(this.inArray) {
+        if(this.currentInArray()) {
             checkPrev();
         }
 
@@ -95,7 +97,7 @@ public final class JsonGenerator {
      * @return генератор {@link JsonGenerator}
      */
     public JsonGenerator write(String write) {
-        if(this.inArray) {
+        if(this.currentInArray()) {
             checkPrev();
         }
 
@@ -141,8 +143,9 @@ public final class JsonGenerator {
      * @return генератор {@link JsonGenerator}
      */
     public JsonGenerator writeField(String write) {
-        if(!this.inArray) {
+        if(!this.currentInArray()) {
             checkPrev();
+
             this.writer.write(HOOK).write(safeJson(write)).write(HOOK).write(FIELD_START);
         }
 
@@ -155,12 +158,12 @@ public final class JsonGenerator {
      * @return генератор {@link JsonGenerator}
      */
     public JsonGenerator writeStartObject() {
-        if(this.inArray) {
+        if(this.currentInArray()) {
             checkPrev();
         }
 
         this.havePrev = false;
-        this.inArray = false;
+        this.inArray.add(false);
         this.writer.write(OBJ_START);
 
         return this;
@@ -174,7 +177,10 @@ public final class JsonGenerator {
      */
     public JsonGenerator writeStartObject(String name) {
         writeField(name);
-        writeStartObject();
+
+        this.havePrev = false;
+        this.inArray.add(false);
+        this.writer.write(OBJ_START);
 
         return this;
     }
@@ -186,9 +192,8 @@ public final class JsonGenerator {
      */
     public JsonGenerator writeEndObject() {
         this.havePrev = true;
-        this.inArray = false;
         this.writer.write(OBJ_END);
-
+        this.inArray.removeLast();
         return this;
     }
 
@@ -198,13 +203,14 @@ public final class JsonGenerator {
      * @return генератор {@link JsonGenerator}
      */
     public JsonGenerator writeStartArray() {
-        if(this.inArray) {
+        if(this.currentInArray()) {
             checkPrev();
         }
 
         this.havePrev = false;
-        this.inArray = true;
         this.writer.write(ARR_START);
+        this.inArray.add(true);
+
         return this;
     }
 
@@ -216,7 +222,10 @@ public final class JsonGenerator {
      */
     public JsonGenerator writeStartArray(String name) {
         writeField(name);
-        writeStartArray();
+
+        this.havePrev = false;
+        this.writer.write(ARR_START);
+        this.inArray.add(true);
 
         return this;
     }
@@ -228,8 +237,8 @@ public final class JsonGenerator {
      */
     public JsonGenerator writeEndArray() {
         this.havePrev = true;
-        this.inArray = false;
         this.writer.write(ARR_END);
+        this.inArray.removeLast();
         return this;
     }
 
@@ -252,6 +261,13 @@ public final class JsonGenerator {
      */
     private static String safeJson(String some) {
         return some.replaceAll("\"", "\\\\\"");
+    }
+
+    /**
+     * @return true, если в данные момент указать находится в массиве
+     */
+    private Boolean currentInArray() {
+        return this.inArray.size() > 0 && Objects.requireNonNullElse(this.inArray.getLast(), false);
     }
 
     /**
