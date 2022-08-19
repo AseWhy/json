@@ -3,14 +3,15 @@ package io.github.asewhy.json;
 import io.github.asewhy.processors.support.CommonBuilderWriter;
 import io.github.asewhy.processors.support.StreamWrapperWriter;
 import io.github.asewhy.processors.support.interfaces.iWriter;
+import org.apache.commons.text.StringEscapeUtils;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.Objects;
+import java.util.*;
 
 @SuppressWarnings({"UnusedReturnValue", "unused"})
 public final class JsonGenerator {
@@ -24,7 +25,7 @@ public final class JsonGenerator {
     private static final String ARR_END = "]";
     private static final String FIELD_START = ":";
 
-    private LinkedList<Boolean> inArray;
+    private final LinkedList<Boolean> inArray;
     private boolean havePrev;
     private DateFormat currentFormat;
     private final iWriter writer;
@@ -259,14 +260,14 @@ public final class JsonGenerator {
      * @param some строка
      * @return безопасная строка
      */
-    private static String safeJson(String some) {
-        return some.replaceAll("\"", "\\\\\"");
+    private static @NotNull String safeJson(@NotNull String some) {
+        return StringEscapeUtils.escapeJson(some);
     }
 
     /**
      * @return true, если в данные момент указать находится в массиве
      */
-    private Boolean currentInArray() {
+    private @NotNull Boolean currentInArray() {
         return this.inArray.size() > 0 && Objects.requireNonNullElse(this.inArray.getLast(), false);
     }
 
@@ -285,27 +286,33 @@ public final class JsonGenerator {
     // Методы-фабрики
     //
 
-    public static JsonGenerator from(@NotNull StringBuilder builder) {
+    @Contract("_ -> new")
+    public static @NotNull JsonGenerator from(@NotNull StringBuilder builder) {
         return new JsonGenerator(new CommonBuilderWriter(builder), PARSABLE_DATE_FORMAT);
     }
 
-    public static JsonGenerator from(@NotNull OutputStream stream) {
+    @Contract("_ -> new")
+    public static @NotNull JsonGenerator from(@NotNull OutputStream stream) {
         return new JsonGenerator(new StreamWrapperWriter(stream), PARSABLE_DATE_FORMAT);
     }
 
-    public static JsonGenerator from(@NotNull StringBuilder builder, @NotNull DateFormat format) {
+    @Contract("_, _ -> new")
+    public static @NotNull JsonGenerator from(@NotNull StringBuilder builder, @NotNull DateFormat format) {
         return new JsonGenerator(new CommonBuilderWriter(builder), format);
     }
 
-    public static JsonGenerator from(@NotNull OutputStream stream, @NotNull DateFormat format) {
+    @Contract("_, _ -> new")
+    public static @NotNull JsonGenerator from(@NotNull OutputStream stream, @NotNull DateFormat format) {
         return new JsonGenerator(new StreamWrapperWriter(stream), format);
     }
 
-    public static JsonGenerator from(@NotNull DateFormat format) {
+    @Contract("_ -> new")
+    public static @NotNull JsonGenerator from(@NotNull DateFormat format) {
         return new JsonGenerator(new CommonBuilderWriter(new StringBuilder()), format);
     }
 
-    public static JsonGenerator common() {
+    @Contract(" -> new")
+    public static @NotNull JsonGenerator common() {
         return new JsonGenerator(new CommonBuilderWriter(new StringBuilder()), PARSABLE_DATE_FORMAT);
     }
 }
