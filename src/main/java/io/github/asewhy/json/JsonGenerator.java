@@ -2,7 +2,7 @@ package io.github.asewhy.json;
 
 import io.github.asewhy.processors.support.CommonBuilderWriter;
 import io.github.asewhy.processors.support.StreamWrapperWriter;
-import io.github.asewhy.processors.support.interfaces.iWriter;
+import io.github.asewhy.processors.support.interfaces.StringWriter;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -28,9 +28,9 @@ public final class JsonGenerator {
     private final LinkedList<Boolean> inArray;
     private boolean havePrev;
     private DateFormat currentFormat;
-    private final iWriter writer;
+    private final StringWriter writer;
 
-    private JsonGenerator(@NotNull iWriter writer, @NotNull DateFormat format) {
+    private JsonGenerator(@NotNull StringWriter writer, @NotNull DateFormat format) {
         this.writer = writer;
         this.inArray = new LinkedList<>();
         this.havePrev = false;
@@ -274,7 +274,7 @@ public final class JsonGenerator {
     /**
      * Преобразовывает генератор к строковому значению
      *
-     * @return строковое значение, зависит от реализации {@link iWriter}
+     * @return строковое значение, зависит от реализации {@link StringWriter}
      */
     @Override
     public String toString() {
