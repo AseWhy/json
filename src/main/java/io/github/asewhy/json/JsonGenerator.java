@@ -3,11 +3,9 @@ package io.github.asewhy.json;
 import io.github.asewhy.processors.support.CommonBuilderWriter;
 import io.github.asewhy.processors.support.StreamWrapperWriter;
 import io.github.asewhy.processors.support.interfaces.StringWriter;
-import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -261,7 +259,7 @@ public final class JsonGenerator {
      * @return безопасная строка
      */
     private static @NotNull String safeJson(@NotNull String some) {
-        return StringEscapeUtils.escapeJson(some);
+        return JsonUtils.escapeJson(some);
     }
 
     /**
